@@ -1,0 +1,4 @@
+interface:
+  display_name: "三角洲行动出货剪辑"
+  short_description: "低额度检测出货事件并生成1080p剪映时间线素材包"
+  default_prompt: "使用 $delta-force-loot-editor 以低额度模式分析这段《三角洲行动》录像并生成1080p剪映素材包。"

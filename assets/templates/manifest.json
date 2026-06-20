@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "baseline": {"width": 1920, "height": 1080, "language": "zh-CN", "platform": "pc"},
+  "analysis_width": 1280,
+  "state": {"enter_frames": 2, "exit_frames": 3, "candidate_threshold": 0.45},
+  "rois": {
+    "inventory_grid": null,
+    "container_title": null,
+    "safe_panel": null,
+    "item_detail": null,
+    "extraction_text": null,
+    "settlement_value": null
+  },
+  "events": {
+    "inventory_open": {"roi": "inventory_grid", "template": "inventory_grid.png", "auto_threshold": 0.78, "required_template": true},
+    "container_open": {"roi": "container_title", "template": "container_title.png", "auto_threshold": 0.80, "required_template": true},
+    "safe_open": {"roi": "safe_panel", "template": "safe_panel.png", "auto_threshold": 0.80, "required_template": true},
+    "loot_search": {"roi": "container_title", "template": "container_title.png", "auto_threshold": 0.74, "required_template": true},
+    "high_value_loot": {
+      "roi": "item_detail",
+      "template": "item_detail.png",
+      "auto_threshold": 0.76,
+      "required_template": true,
+      "requires_overlap": "inventory_open",
+      "overlap_padding": 0.5,
+      "hsv_ranges": [
+        {"lower": [125, 80, 80], "upper": [179, 255, 255], "min_ratio": 0.02},
+        {"lower": [5, 120, 120], "upper": [30, 255, 255], "min_ratio": 0.02}
+      ]
+    },
+    "extraction_success": {"roi": "extraction_text", "template": "extraction_success.png", "auto_threshold": 0.84, "required_template": true},
+    "settlement_screen": {"roi": "settlement_value", "template": "settlement_value.png", "auto_threshold": 0.82, "required_template": true}
+  },
+  "zoom_roi": "item_detail"
+}
