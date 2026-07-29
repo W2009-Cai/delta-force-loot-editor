@@ -41,15 +41,16 @@ def _passes_event_gate(
     all_events: list[dict[str, Any]],
     event_config: dict[str, Any],
 ) -> tuple[bool, str | None]:
-    required = event_config.get("requires_overlap")
+    required = event_config.get("requires_any_overlap", event_config.get("requires_overlap"))
     if not required:
         return True, None
+    required_events = [required] if isinstance(required, str) else list(required)
     padding = max(0.0, float(event_config.get("overlap_padding", 0.5)))
     passed = any(
-        candidate.get("event") == required and _overlaps(event, candidate, padding)
+        candidate.get("event") in required_events and _overlaps(event, candidate, padding)
         for candidate in all_events
     )
-    return passed, required
+    return passed, " | ".join(required_events)
 
 
 def scan_video(
@@ -107,6 +108,8 @@ def scan_video(
         threshold = float(event_config.get("auto_threshold", 0.75))
         gate_passed, gate_event = _passes_event_gate(current, detector_events, event_config)
         current["auto_threshold"] = threshold
+        current["suggested_pre_roll"] = max(0.0, float(event_config.get("pre_roll", pre_roll)))
+        current["suggested_post_roll"] = max(0.0, float(event_config.get("post_roll", post_roll)))
         current["gate_passed"] = gate_passed
         if gate_event:
             current["requires_overlap"] = gate_event

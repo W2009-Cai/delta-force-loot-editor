@@ -231,6 +231,7 @@ def detect_events(
         if event_name not in event_configs:
             continue
         state = dict(config.get("state", {}))
+        state.update(event_configs[event_name].get("state", {}))
         sample_fps = float(frames_manifest.get("sample_fps", 0) or 0)
         state["sample_interval"] = 1.0 / sample_fps if sample_fps else 0.0
         output.extend(observations_to_events(event_name, observations[event_name], state, detector_name))

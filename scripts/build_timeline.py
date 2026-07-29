@@ -73,8 +73,12 @@ def build_timeline(
         event["id"] = event.get("id") or f"event_{index:04d}"
         event["raw_start"] = round(max(0.0, float(event.get("raw_start", event.get("start", 0)))), 3)
         event["raw_end"] = round(min(duration, max(event["raw_start"], float(event.get("raw_end", event.get("end", 0))))), 3)
-        event["start"] = round(max(0.0, event["raw_start"] - pre_roll), 3)
-        event["end"] = round(min(duration, event["raw_end"] + post_roll), 3)
+        event_pre_roll = max(0.0, float(event.get("suggested_pre_roll", pre_roll)))
+        event_post_roll = max(0.0, float(event.get("suggested_post_roll", post_roll)))
+        event["suggested_pre_roll"] = event_pre_roll
+        event["suggested_post_roll"] = event_post_roll
+        event["start"] = round(max(0.0, event["raw_start"] - event_pre_roll), 3)
+        event["end"] = round(min(duration, event["raw_end"] + event_post_roll), 3)
         event["duration"] = round(event["raw_end"] - event["raw_start"], 3)
         event["auto_selected"] = bool(event.get("auto_selected", True))
         event["keep"] = event["auto_selected"]
@@ -123,7 +127,8 @@ def build_timeline(
 def write_events_csv(path: Path, events: list[dict[str, Any]]) -> None:
     fields = [
         "id", "event", "event_label", "raw_start", "raw_end", "raw_timecode", "raw_duration",
-        "suggested_start", "suggested_end", "confidence", "peak_confidence", "auto_selected", "debug_frame",
+        "suggested_start", "suggested_end", "suggested_pre_roll", "suggested_post_roll",
+        "confidence", "peak_confidence", "auto_selected", "subtype", "review_status", "notes", "debug_frame",
     ]
     with path.open("w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
@@ -140,9 +145,14 @@ def write_events_csv(path: Path, events: list[dict[str, Any]]) -> None:
                     "raw_duration": event["duration"],
                     "suggested_start": event["start"],
                     "suggested_end": event["end"],
+                    "suggested_pre_roll": event.get("suggested_pre_roll", ""),
+                    "suggested_post_roll": event.get("suggested_post_roll", ""),
                     "confidence": event.get("confidence", 0),
                     "peak_confidence": event.get("peak_confidence", 0),
                     "auto_selected": event["auto_selected"],
+                    "subtype": event.get("subtype", ""),
+                    "review_status": event.get("review_status", ""),
+                    "notes": event.get("notes", ""),
                     "debug_frame": event.get("debug_frame", ""),
                 }
             )
@@ -169,21 +179,25 @@ def write_review_html(path: Path, events: list[dict[str, Any]], merge_gap: float
         debug_src = html.escape(debug.replace("\\", "/"), quote=True)
         image = f'<img src="{debug_src}" alt="debug">' if debug else "—"
         checked = "checked" if event.get("auto_selected") else ""
+        subtype = html.escape(str(event.get("subtype", "—")))
+        status = html.escape(str(event.get("review_status", "未审核")))
+        notes = html.escape(str(event.get("notes", "")))
         rows.append(
             "<tr>"
             f'<td><input class="keep" type="checkbox" data-id="{html.escape(event["id"])}" {checked}></td>'
             f"<td>{html.escape(label_for(event['event']))}</td>"
+            f"<td>{subtype}</td>"
             f"<td>{seconds_to_clock(event['raw_start'])}</td>"
             f"<td>{seconds_to_clock(event['raw_end'])}</td>"
             f"<td>{float(event.get('confidence', 0)):.1%}</td>"
-            f"<td>{image}</td></tr>"
+            f"<td>{status}</td><td>{notes}</td><td>{image}</td></tr>"
         )
     document = f"""<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><title>三角洲事件审核</title>
 <style>body{{font-family:Segoe UI,Microsoft YaHei,sans-serif;background:#111;color:#eee;margin:24px}}button{{padding:9px 14px;margin-right:8px}}table{{border-collapse:collapse;width:100%;margin-top:16px}}th,td{{border:1px solid #444;padding:8px;text-align:left}}th{{background:#252525;position:sticky;top:0}}img{{width:240px;max-height:135px;object-fit:contain}}.muted{{color:#aaa}}</style></head>
 <body><h1>《三角洲行动》事件审核</h1><p class="muted">所有候选均保留在 events.json。复选框只影响导出的审核时间线。</p>
 <button onclick="exportTimeline()">导出审核后的 timeline.json</button><button onclick="selectAll(true)">全选</button><button onclick="selectAll(false)">全不选</button>
-<table><thead><tr><th>保留</th><th>事件</th><th>开始</th><th>结束</th><th>置信度</th><th>调试截图</th></tr></thead><tbody>{''.join(rows)}</tbody></table>
+<table><thead><tr><th>保留</th><th>事件</th><th>子类型</th><th>开始</th><th>结束</th><th>置信度</th><th>审核状态</th><th>备注</th><th>调试截图</th></tr></thead><tbody>{''.join(rows)}</tbody></table>
 <script>const events={safe_json};const mergeGap={merge_gap};
 function selectAll(v){{document.querySelectorAll('.keep').forEach(x=>x.checked=v)}}
 function exportTimeline(){{

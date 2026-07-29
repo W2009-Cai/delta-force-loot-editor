@@ -41,6 +41,23 @@ class TimelineTests(unittest.TestCase):
         self.assertEqual(len(normalized), 1)
         self.assertEqual(timeline, [])
 
+    def test_event_specific_padding_keeps_talk_context(self) -> None:
+        events = [
+            {
+                "event": "card_use",
+                "raw_start": 20.0,
+                "raw_end": 21.0,
+                "confidence": 0.9,
+                "auto_selected": True,
+                "suggested_pre_roll": 5.0,
+                "suggested_post_roll": 7.0,
+            }
+        ]
+        normalized, timeline = build_timeline(events, duration=60.0, pre_roll=1.0, post_roll=1.0)
+        self.assertEqual((timeline[0]["start"], timeline[0]["end"]), (15.0, 28.0))
+        self.assertEqual(normalized[0]["suggested_pre_roll"], 5.0)
+        self.assertEqual(normalized[0]["suggested_post_roll"], 7.0)
+
 
 if __name__ == "__main__":
     unittest.main()

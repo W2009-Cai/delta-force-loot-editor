@@ -3,7 +3,11 @@
 - Sample at 4 fps by default; accept only 2-5 fps.
 - Enter an event after 2 consecutive candidate frames and leave after 3 consecutive misses.
 - Preserve raw event boundaries in `events.json`.
-- Build automatic clips with 3 seconds before and 2 seconds after each event.
+- Use event-specific context when present in the manifest; otherwise build automatic clips with 3 seconds before and 2 seconds after each event.
+- Default conversational context: container/safe/search/card events keep 5 seconds before and 7 seconds after; ability events keep 4 seconds before and 6 seconds after. Move boundaries manually to a complete sentence or natural pause when those windows are insufficient.
+- Container and safe cuts must preserve the complete search/loot UI. If a safe has a keypad or opening animation before the loot UI, include the keypad/opening context plus the full loot UI and at least 2 seconds after the UI closes.
+- Preserve `switch_pull` / power-control route events as valid route-progress clips. Treat them as objective/route information, not as room-card use.
+- When two selected loot/card/safe/route events are separated by a long ordinary-running gap, do not keep the entire run by default. Add a short `transition_context` clip before the next selected search/card/safe event, typically the final 6-10 seconds before arrival, to show relocation and route intent.
 - Merge selected clips separated by less than 8 seconds.
 - Apply exclusions after buffering and split a clip when an exclusion cuts through it.
 - Apply manual includes before the final merge.
@@ -13,7 +17,10 @@
 - Douyin: 1920x1080 full 16:9 frame and source fps, CRF 19, event labels only; no unlicensed music.
 - Preview: 1280x720, CRF 28, ultrafast.
 - Keep `events.json` as the immutable detection audit; edits belong in `overrides.json` or a reviewed timeline.
-- Gate high-value loot candidates on an overlapping inventory event unless a calibrated detector proves that the item detail UI is independently reliable.
+- Keep card-use and ability-use candidates even when they are false positives; reject them in review rather than deleting them from the audit.
+- Preserve user-corrected candidates with `review_status`, `subtype`, and notes. Keep a rejected broad/incorrect candidate in the audit and add the corrected event instead of silently replacing evidence.
+- Use one-frame entry and two-miss exit hysteresis for the shared loot-search UI at 4 fps: this retains short containers while tolerating one weak template frame. Keep stricter multi-frame gates for card use, room-card pickup, and abilities unless calibration proves a shorter event is reliable.
+- Gate high-value loot candidates on an overlapping inventory or loot-search event unless a calibrated detector proves that the item detail UI is independently reliable.
 - Use `review_uncertain.html` for model review; reserve the full review page for explicit audits.
 - Default delivery is merged `timeline_clips/`. Exact event clips and final master/Douyin renders are opt-in.
 - Run FFmpeg with error-only logging and no progress stats. Save commands to `ffmpeg_commands.txt` and return only summaries to the model.
