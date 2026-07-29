@@ -71,6 +71,20 @@ class DetectorTests(unittest.TestCase):
                 detect_events(root / "frames.json", root / "config.json", list(config["events"]), "test")
             self.assertEqual(mocked.call_count, len(frames) + 1)
 
+    def test_event_specific_state_detects_short_search(self) -> None:
+        observations = [
+            {"time": 1.0, "frame": "one.jpg", "confidence": 0.9, "evidence": {}},
+            {"time": 1.25, "frame": "two.jpg", "confidence": 0.1, "evidence": {}},
+        ]
+        events = detector_core.observations_to_events(
+            "loot_search",
+            observations,
+            {"candidate_threshold": 0.45, "enter_frames": 1, "exit_frames": 1, "sample_interval": 0.25},
+            "test",
+        )
+        self.assertEqual(len(events), 1)
+        self.assertEqual((events[0]["raw_start"], events[0]["raw_end"]), (1.0, 1.25))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -29,6 +29,17 @@ class ScanVideoTests(unittest.TestCase):
         )
         self.assertFalse(passed)
 
+    def test_high_value_gate_accepts_any_search_ui_overlap(self) -> None:
+        high_value = {"event": "high_value_loot", "raw_start": 10.0, "raw_end": 11.0}
+        config = {"requires_any_overlap": ["inventory_open", "loot_search"], "overlap_padding": 0.5}
+        passed, required = _passes_event_gate(
+            high_value,
+            [high_value, {"event": "loot_search", "raw_start": 10.25, "raw_end": 10.75}],
+            config,
+        )
+        self.assertTrue(passed)
+        self.assertEqual(required, "inventory_open | loot_search")
+
 
 if __name__ == "__main__":
     unittest.main()
